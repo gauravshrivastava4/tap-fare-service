@@ -1,0 +1,5 @@
+"Started","Finished","DurationSecs","FromStopId","ToStopId","ChargeAmount","CompanyId","BusID","PAN","Status"
+"2023-01-22T09:20","","0","Stop3","","7.3","Company1","Bus36","4111111111111111","INCOMPLETE"
+"2023-01-22T13:00","2023-01-22T13:05","300","Stop1","Stop2","3.25","Company1","Bus37","5500005555555559","COMPLETED"
+"2023-01-23T08:00","2023-01-23T08:02","0","Stop1","Stop1","0.0","Company1","Bus37","4111111111111111","CANCELLED"
+"","2023-01-24T16:30","0","","Stop2","5.5","Company1","Bus37","5500005555555559","INCOMPLETE"

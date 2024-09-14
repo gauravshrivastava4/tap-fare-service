@@ -1,13 +1,17 @@
 package com.littlepay.tapfare;
 
+import com.littlepay.tapfare.config.TripsCsvConfig;
+import com.littlepay.tapfare.config.TripsFareConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @SpringBootApplication
+@EnableConfigurationProperties({TripsCsvConfig.class, TripsFareConfig.class})
 public class TapfareApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(TapfareApplication.class, args);
-	}
+    public static void main(final String[] args) {
+        SpringApplication.run(TapfareApplication.class, args);
+    }
 
 }
