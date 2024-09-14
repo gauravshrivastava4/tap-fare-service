@@ -1,0 +1,8 @@
+spring:
+  application:
+    name:
+      TapFare
+trips:
+  csv:
+    input-file-path: src/main/resources/taps.csv
+    output-file-path: src/main/resources/trips.csv
