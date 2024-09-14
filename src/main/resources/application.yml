@@ -6,3 +6,9 @@ trips:
   csv:
     input-file-path: src/main/resources/taps.csv
     output-file-path: src/main/resources/trips.csv
+  fare:
+    Stop1:
+      Stop2: 3.25
+      Stop3: 7.30
+    Stop2:
+      Stop3: 5.50
