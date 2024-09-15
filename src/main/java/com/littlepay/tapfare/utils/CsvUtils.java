@@ -33,6 +33,14 @@ public class CsvUtils {
     private static final String[] TRIP_CSV_HEADER = {"Started", "Finished", "DurationSecs", "FromStopId", "ToStopId",
             "ChargeAmount", "CompanyId", "BusID", "PAN", "Status"};
 
+
+    /**
+     * Reads tap information from a CSV file and returns it as a list of Tap objects.
+     *
+     * @param inputFilePath the path to the input CSV file
+     * @return a list of Tap objects read from the provided CSV file
+     * @throws CsvProcessingException if there is an error reading from the file or parsing its contents
+     */
     public List<Tap> readTapsFromCsv(final String inputFilePath) {
         final List<Tap> taps = new ArrayList<>();
 

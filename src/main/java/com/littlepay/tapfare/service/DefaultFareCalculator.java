@@ -6,6 +6,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 
+
+/**
+ * DefaultFareCalculator is a component responsible for calculating fares between stops using a fare matrix.
+ */
 @Component
 @RequiredArgsConstructor
 public class DefaultFareCalculator implements FareCalculator {
