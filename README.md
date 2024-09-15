@@ -141,10 +141,11 @@ the fare for each trip based on a predefined fare matrix.
     ```bash
     curl -X POST http://localhost:8080/taps/process
     ```   
+   *[processTaps.http](httpRequests/processTaps.http) Can also be used to start the process*
 
 ## Example CSV Format
 
-### Input CSV (Tap Data)
+### [input-file](src/main/resources/taps.csv) Input CSV (Tap Data)
 
 ```
 ID,DateTimeUTC,TapType,StopId,CompanyId,BusID,PAN
@@ -157,7 +158,7 @@ ID,DateTimeUTC,TapType,StopId,CompanyId,BusID,PAN
 ...
 ```
 
-### Output CSV (Processed Trip Data)
+### [output-file](src/main/resources/trips.csv) Output CSV (Processed Trip Data)
 
 ```
 Started,Finished,DurationSecs,FromStopId,ToStopId,ChargeAmount,CompanyId,BusID,PAN,Status
