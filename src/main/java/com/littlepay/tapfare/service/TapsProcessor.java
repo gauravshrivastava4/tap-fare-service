@@ -42,9 +42,9 @@ public class TapsProcessor {
             log.info(message);
             return message;
         } catch (final Exception e) {
-            log.error("Taps processing failed.", e);
+            log.error("Taps processing failed due to unexpected error.", e);
             updateProcessState(ProcessState.FAILED);
-            throw new ProcessFailedException("CSV processing failed due to: %s".formatted(e.getMessage()), e);
+            throw new ProcessFailedException("Taps processing failed due to unexpected error: %s".formatted(e.getMessage()), e);
         }
     }
 
@@ -60,8 +60,8 @@ public class TapsProcessor {
         try {
             csvUtils.writeTripsToCsv(trips, tripsCsvConfig.getOutputFilePath());
         } catch (final Exception e) {
-            log.error("Failed to write trips to CSV.", e);
-            throw new ProcessFailedException("Failed to write trips to CSV: %s".formatted(e.getCause()), e);
+            log.error("Error writing trips to CSV.", e);
+            throw new ProcessFailedException("Error writing write trips to CSV: %s".formatted(e.getCause()), e);
         }
     }
 
@@ -69,8 +69,8 @@ public class TapsProcessor {
         try {
             return tripsCreationService.createTrips(taps);
         } catch (final Exception e) {
-            log.error("Failed to create trips from taps.", e);
-            throw new ProcessFailedException("Failed to create trips from taps: %s".formatted(e.getCause()), e);
+            log.error("Error creating trips from taps.", e);
+            throw new ProcessFailedException("Error creating create trips from taps: %s".formatted(e.getCause()), e);
         }
     }
 
@@ -78,8 +78,8 @@ public class TapsProcessor {
         try {
             return csvUtils.readTapsFromCsv(tripsCsvConfig.getInputFilePath());
         } catch (final Exception e) {
-            log.error("Failed to read taps from CSV.", e);
-            throw new ProcessFailedException("Failed to read taps from CSV: %s".formatted(e.getCause()), e);
+            log.error("Error reading taps from CSV.", e);
+            throw new ProcessFailedException("Error reading read taps from CSV: %s".formatted(e.getCause()), e);
         }
     }
 }

@@ -28,7 +28,6 @@ public class CsvUtils {
     private static final String[] TRIP_CSV_HEADER = {"Started", "Finished", "DurationSecs", "FromStopId", "ToStopId",
             "ChargeAmount", "CompanyId", "BusID", "PAN", "Status"};
 
-
     public List<Tap> readTapsFromCsv(final String inputFilePath) {
         final List<Tap> taps = new ArrayList<>();
 
@@ -42,21 +41,23 @@ public class CsvUtils {
                     final Tap tap = parseCsvLineToTap(line);
                     taps.add(tap);
                 } catch (final DateTimeParseException e) {
-                    throw new RuntimeException("Error parsing date for tap ID %s".formatted(line[0]), e);
+                    log.error("Error parsing date for tap ID: {}", line[0], e);
+                    throw new CsvProcessingException("Error parsing date for tap ID: %s".formatted(line[0]), e);
                 } catch (final IllegalArgumentException e) {
-                    throw new RuntimeException("Invalid data found in line for tap ID  %s".formatted(line[0]), e);
+                    log.error("Invalid data found in line for tap ID: {}", line[0], e);
+                    throw new CsvProcessingException("Invalid data found in line for tap ID: %s".formatted(line[0]), e);
                 }
             }
         } catch (final Exception e) {
-            throw new CsvProcessingException("Error reading from CSV file:  %s".formatted(inputFilePath), e);
+            log.error("Error reading from CSV file: {}", inputFilePath, e);
+            throw new CsvProcessingException("Error reading from CSV file: %s".formatted(inputFilePath), e);
         }
 
         sortByDatetime(taps);
-
         return taps;
     }
 
-    private static void sortByDatetime(final List<Tap> taps) {
+    private void sortByDatetime(final List<Tap> taps) {
         taps.sort(Comparator.comparing(Tap::getLocalDateTime));
     }
 
@@ -74,7 +75,6 @@ public class CsvUtils {
             throw new CsvProcessingException("Error writing to CSV file: %s".formatted(outputFilePath), e);
         }
     }
-
 
     private Tap parseCsvLineToTap(final String[] line) throws DateTimeParseException, IllegalArgumentException {
         final long id = Long.parseLong(line[0]);
