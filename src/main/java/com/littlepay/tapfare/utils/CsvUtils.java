@@ -1,11 +1,11 @@
 package com.littlepay.tapfare.utils;
 
 import com.littlepay.tapfare.constant.TapType;
+import com.littlepay.tapfare.exceptions.CsvProcessingException;
 import com.littlepay.tapfare.model.Tap;
 import com.littlepay.tapfare.model.Trip;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
-import com.opencsv.exceptions.CsvValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -42,14 +42,13 @@ public class CsvUtils {
                     final Tap tap = parseCsvLineToTap(line);
                     taps.add(tap);
                 } catch (final DateTimeParseException e) {
-                    log.error("Error parsing date for tap ID {}: {}", line[0], e.getMessage());
+                    throw new RuntimeException("Error parsing date for tap ID %s".formatted(line[0]), e);
                 } catch (final IllegalArgumentException e) {
-                    log.error("Invalid data found in line for tap ID {}: {}", line[0], e.getMessage());
+                    throw new RuntimeException("Invalid data found in line for tap ID  %s".formatted(line[0]), e);
                 }
             }
-        } catch (final CsvValidationException | IOException e) {
-            log.error("Error reading from CSV file: {}", inputFilePath, e);
-            throw new RuntimeException(e);
+        } catch (final Exception e) {
+            throw new CsvProcessingException("Error reading from CSV file:  %s".formatted(inputFilePath), e);
         }
 
         sortByDatetime(taps);
@@ -72,7 +71,7 @@ public class CsvUtils {
 
         } catch (final IOException e) {
             log.error("Error writing to CSV file: {}", outputFilePath, e);
-            throw new RuntimeException(e);
+            throw new CsvProcessingException("Error writing to CSV file: %s".formatted(outputFilePath), e);
         }
     }
 

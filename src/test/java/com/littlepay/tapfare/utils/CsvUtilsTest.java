@@ -2,8 +2,10 @@ package com.littlepay.tapfare.utils;
 
 import com.littlepay.tapfare.constant.TapType;
 import com.littlepay.tapfare.constant.TripStatus;
+import com.littlepay.tapfare.exceptions.CsvProcessingException;
 import com.littlepay.tapfare.model.Tap;
 import com.littlepay.tapfare.model.Trip;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,8 +72,8 @@ class CsvUtilsTest {
         ));
 
         // Act and Assert
-        csvUtils.readTapsFromCsv(inputCsv.toString());
-        assertThat(capturedOutput.getOut()).contains("Text 'INVALID_DATE' could not be parsed");
+        final CsvProcessingException exception = Assertions.assertThrows(CsvProcessingException.class, () -> csvUtils.readTapsFromCsv(inputCsv.toString()));
+        assertThat(exception.getMessage()).contains("Error reading from CSV file: ");
     }
 
     @Test

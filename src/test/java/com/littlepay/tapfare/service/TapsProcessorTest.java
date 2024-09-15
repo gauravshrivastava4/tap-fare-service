@@ -108,7 +108,7 @@ class TapsProcessorTest {
 
         // Act & Assert
         final RuntimeException exception = Assertions.assertThrows(RuntimeException.class, () -> tapsProcessor.processTaps());
-        assertThat(exception.getMessage()).isEqualTo("Error reading CSV");
+        assertThat(exception.getMessage()).contains("CSV processing failed due to: Failed to read taps from CSV:");
 
         verify(csvUtils).readTapsFromCsv(inputFilePath);
         verifyNoMoreInteractions(tripsCreationService, csvUtils);
