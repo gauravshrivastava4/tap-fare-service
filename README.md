@@ -14,6 +14,8 @@ the fare for each trip based on a predefined fare matrix.
 - One csv file will contain data for only one Company
 - CSV may have orphan ONs and OFFs
 - CSV will not have data sorted by time
+- CSV can have multiple COMPLETED trips for a single PAN, hence sorting the CSV by localdatetime before processing
+- There is no need to consider different timezones
 
 ## Improvement Opportunities
 
@@ -28,7 +30,7 @@ the fare for each trip based on a predefined fare matrix.
 
 - **Tap Processing**: Processes tap-on and tap-off events to create trips.
 - **Fare Calculation**: Calculates fares based on the distance between stops and pre-defined fare rules.
-- **CSV Import/Export**: Reads raw tap data from a CSV file, submits the taps for processing and writes the processed
+- **CSV Import/Export**: Reads raw tap data from a CSV file, sorts them by time and writes the processed
   trip data to a CSV file.
 - **Error Handling**: Gracefully handles cases like orphan tap-on or tap-off events.
 - **Symmetric Fare Matrix**: Ensures that fares from Stop A to Stop B are the same as from Stop B to Stop A.

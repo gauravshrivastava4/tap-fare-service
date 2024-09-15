@@ -1,112 +1,102 @@
 package com.littlepay.tapfare.utils;
 
+import com.littlepay.tapfare.constant.TapType;
 import com.littlepay.tapfare.constant.TripStatus;
 import com.littlepay.tapfare.exceptions.CsvProcessingException;
 import com.littlepay.tapfare.model.Tap;
 import com.littlepay.tapfare.model.Trip;
-import com.littlepay.tapfare.service.TripsCreationService;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
-public class CsvUtilsTest {
-
-    @Mock
-    private TripsCreationService tripsCreationService;
+class CsvUtilsTest {
 
     @InjectMocks
     private CsvUtils csvUtils;
 
+    @TempDir
+    Path tempDir;
+
     @Test
-    public void testReadTapsFromCsvAndCreateTrips_Success() throws IOException {
-        // Mock input CSV data
-        final String inputCsv = """
-                ID,DateTime,TapType,StopId,CompanyId,BusId,PAN
-                1,01-01-2023 08:00:00,ON,Stop1,Company1,Bus1,PAN1
-                2,01-01-2023 08:10:00,OFF,Stop2,Company1,Bus1,PAN1
-                """;
+    void testReadTapsFromCsv_success() throws Exception {
 
-        // Set up a temporary CSV file for the test
-        final File tempFile = File.createTempFile("testInput", ".csv");
-        try (final FileWriter fileWriter = new FileWriter(tempFile)) {
-            fileWriter.write(inputCsv);
-        }
+        final Path inputCsv = tempDir.resolve("taps.csv");
+        Files.write(inputCsv, List.of(
+                "ID,DateTimeUTC,TapType,StopId,CompanyId,BusID,PAN", // Header
+                "1,22-01-2023 13:00:00,ON,Stop1,Company1,Bus37,5500005555555559",
+                "2,22-01-2023 13:05:00,OFF,Stop2,Company1,Bus37,5500005555555559"
+        ));
 
-        doNothing().when(tripsCreationService).createCompletedAndCancelledTrips(any(Tap.class));
-        when(tripsCreationService.getTrips()).thenReturn(new ArrayList<>());
 
-        final List<Trip> trips = csvUtils.readTapsFromCsvAndCreateTrips(tempFile.getAbsolutePath());
+        final List<Tap> taps = csvUtils.readTapsFromCsv(inputCsv.toString());
 
-        verify(tripsCreationService, times(2)).createCompletedAndCancelledTrips(any(Tap.class));
-        assertNotNull(trips);
-        assertEquals(0, trips.size()); // Since we mocked an empty return list
+        assertThat(taps).hasSize(2);
+        final Tap tap1 = taps.get(0);
+        final Tap tap2 = taps.get(1);
+
+        assertThat(tap1.getTapType()).isEqualTo(TapType.ON);
+        assertThat(tap1.getStopId()).isEqualTo("Stop1");
+
+        assertThat(tap2.getTapType()).isEqualTo(TapType.OFF);
+        assertThat(tap2.getStopId()).isEqualTo("Stop2");
     }
 
     @Test
-    public void testReadTapsFromCsvAndCreateTrips_Exception() throws IOException {
-        // Mock input CSV data with an invalid date format
-        final String inputCsv = """
-                ID,DateTime,TapType,StopId,CompanyId,BusId,PAN
-                1,invalid-date,ON,Stop1,Company1,Bus1,PAN1
-                """;
+    void testReadTapsFromCsv_invalidDate() throws Exception {
 
-        // Set up a temporary CSV file for the test
-        final File tempFile = File.createTempFile("testInput", ".csv");
-        try (final FileWriter fileWriter = new FileWriter(tempFile)) {
-            fileWriter.write(inputCsv);
-        }
+        final Path inputCsv = tempDir.resolve("invalid_taps.csv");
+        Files.write(inputCsv, List.of(
+                "ID,DateTimeUTC,TapType,StopId,CompanyId,BusID,PAN", // Header
+                "1,INVALID_DATE,ON,Stop1,Company1,Bus37,5500005555555559"
+        ));
 
-        assertThrows(CsvProcessingException.class, () -> {
-            csvUtils.readTapsFromCsvAndCreateTrips(tempFile.getAbsolutePath());
-        });
+        final CsvProcessingException exception = Assertions.assertThrows(CsvProcessingException.class, () -> csvUtils.readTapsFromCsv(inputCsv.toString()));
+        assertThat(exception.getMessage()).contains("Error reading from CSV file: ");
     }
 
     @Test
-    public void testWriteTripsToCsv_Success() throws IOException {
-        final List<Trip> trips = new ArrayList<>();
-        trips.add(new Trip(LocalDateTime.of(2023, 1, 1, 8, 0),
-                LocalDateTime.of(2023, 1, 1, 8, 10),
-                600, "Stop1", "Stop2", 3.25, "Company1", "Bus1", "PAN1", TripStatus.COMPLETED));
+    void testWriteTripsToCsv_success() throws Exception {
 
-        // Set up a temporary CSV file for the test
-        final File tempFile = File.createTempFile("testOutput", ".csv");
+        final Path outputCsv = tempDir.resolve("trips.csv");
 
-        csvUtils.writeTripsToCsv(trips, tempFile.getAbsolutePath());
+        final List<Trip> trips = List.of(
+                new Trip(LocalDateTime.of(2023, 1, 22, 13, 0), LocalDateTime.of(2023, 1, 22, 13, 5), 300,
+                        "Stop1", "Stop2", 3.25, "Company1", "Bus37", "5500005555555559", TripStatus.COMPLETED),
+                new Trip(LocalDateTime.of(2023, 1, 23, 9, 0), null, 0, "Stop3", null, 7.00, "Company2",
+                        "Bus38", "4111111111111111", TripStatus.INCOMPLETE)
+        );
 
-        try (final BufferedReader reader = new BufferedReader(new FileReader(tempFile))) {
-            final String header = reader.readLine();
-            final String firstLine = reader.readLine();
+        csvUtils.writeTripsToCsv(trips, outputCsv.toString());
 
-            assertNotNull(header);
-            assertEquals("Started,Finished,DurationSecs,FromStopId,ToStopId,ChargeAmount,CompanyId,BusID,PAN,Status", header);
-
-            assertNotNull(firstLine);
-            assertTrue(firstLine.contains("01-01-2023 08:00:00"));
-            assertTrue(firstLine.contains("600")); // DurationSecs
-            assertTrue(firstLine.contains("COMPLETED")); // Status
-        }
+        final List<String> lines = Files.readAllLines(outputCsv);
+        assertThat(lines).hasSize(3); // Header + 2 records
+        assertThat(lines.get(0)).isEqualTo("Started,Finished,DurationSecs,FromStopId,ToStopId,ChargeAmount,CompanyId,BusID,PAN,Status");
+        assertThat(lines.get(1)).isEqualTo("22-01-2023 13:00:00,22-01-2023 13:05:00,300,Stop1,Stop2,3.25,Company1,Bus37,5500005555555559,COMPLETED");
+        assertThat(lines.get(2)).isEqualTo("23-01-2023 09:00:00,,0,Stop3,,7.0,Company2,Bus38,4111111111111111,INCOMPLETE");
     }
 
     @Test
-    public void testWriteTripsToCsv_Exception() {
-        final List<Trip> trips = new ArrayList<>();
-        trips.add(new Trip(LocalDateTime.of(2023, 1, 1, 8, 0),
-                LocalDateTime.of(2023, 1, 1, 8, 10),
-                600, "Stop1", "Stop2", 3.25, "Company1", "Bus1", "PAN1", TripStatus.COMPLETED));
+    void testWriteTripsToCsv_error() {
 
-        assertThrows(CsvProcessingException.class, () -> {
-            csvUtils.writeTripsToCsv(trips, "/invalid/path/output.csv");
-        });
+        final String invalidPath = "/invalid_path/trips.csv"; // Invalid path
+
+        final List<Trip> trips = List.of(
+                new Trip(LocalDateTime.of(2023, 1, 22, 13, 0), LocalDateTime.of(2023, 1, 22, 13, 5), 300,
+                        "Stop1", "Stop2", 3.25, "Company1", "Bus37", "5500005555555559", TripStatus.COMPLETED)
+        );
+
+        assertThrows(RuntimeException.class, () -> csvUtils.writeTripsToCsv(trips, invalidPath));
     }
 }

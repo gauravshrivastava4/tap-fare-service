@@ -4,6 +4,7 @@ import com.littlepay.tapfare.config.TripsCsvConfig;
 import com.littlepay.tapfare.constant.ProcessState;
 import com.littlepay.tapfare.exceptions.ProcessFailedException;
 import com.littlepay.tapfare.exceptions.ProcessStartedException;
+import com.littlepay.tapfare.model.Tap;
 import com.littlepay.tapfare.model.Trip;
 import com.littlepay.tapfare.utils.CsvUtils;
 import lombok.AllArgsConstructor;
@@ -20,12 +21,14 @@ public class TapsProcessor {
     private final CsvUtils csvUtils;
     private final TripsCsvConfig tripsCsvConfig;
     private final ProcessStateHandler processStateHandler;
+    private final TripsCreationService tripsCreationService;
 
     public String processTaps() {
         validateProcessState();
         try {
-            final List<Trip> trips = readTapsFromCsvAndCreateTrips();
-            return writeTripsToCsv(trips);
+            final List<Tap> taps = readTapsFromCsv();
+            final List<Trip> trips = createTrips(taps);
+            return generateOutputTripsCsv(trips);
         } catch (final Exception e) {
             log.error("Taps processing failed due to unexpected error.", e);
             updateProcessState(ProcessState.FAILED);
@@ -43,7 +46,27 @@ public class TapsProcessor {
         processStateHandler.setProcessState(newState);
     }
 
-    private String writeTripsToCsv(final List<Trip> trips) {
+    private List<Tap> readTapsFromCsv() {
+        try {
+            log.info("Starting taps processing.");
+            updateProcessState(ProcessState.STARTED);
+            return csvUtils.readTapsFromCsv(tripsCsvConfig.getInputFilePath());
+        } catch (final Exception e) {
+            log.error("Error reading taps from CSV.", e);
+            throw new ProcessFailedException("Error reading read taps from CSV: %s".formatted(e.getCause()), e);
+        }
+    }
+
+    private List<Trip> createTrips(final List<Tap> taps) {
+        try {
+            return tripsCreationService.createTrips(taps);
+        } catch (final Exception e) {
+            log.error("Error creating trips from taps.", e);
+            throw new ProcessFailedException("Error creating create trips from taps: %s".formatted(e.getCause()), e);
+        }
+    }
+
+    private String generateOutputTripsCsv(final List<Trip> trips) {
         try {
             csvUtils.writeTripsToCsv(trips, tripsCsvConfig.getOutputFilePath());
             updateProcessState(ProcessState.COMPLETED);
@@ -56,14 +79,4 @@ public class TapsProcessor {
         }
     }
 
-    private List<Trip> readTapsFromCsvAndCreateTrips() {
-        try {
-            log.info("Starting taps processing.");
-            updateProcessState(ProcessState.STARTED);
-            return csvUtils.readTapsFromCsvAndCreateTrips(tripsCsvConfig.getInputFilePath());
-        } catch (final Exception e) {
-            log.error("Error reading taps from CSV.", e);
-            throw new ProcessFailedException("Error reading read taps from CSV: %s".formatted(e.getCause()), e);
-        }
-    }
 }

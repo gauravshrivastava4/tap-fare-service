@@ -1,8 +1,10 @@
 package com.littlepay.tapfare.service;
 
 import com.littlepay.tapfare.config.TripsCsvConfig;
+import com.littlepay.tapfare.constant.TapType;
 import com.littlepay.tapfare.constant.TripStatus;
 import com.littlepay.tapfare.exceptions.ProcessStartedException;
+import com.littlepay.tapfare.model.Tap;
 import com.littlepay.tapfare.model.Trip;
 import com.littlepay.tapfare.utils.CsvUtils;
 import org.junit.jupiter.api.Assertions;
@@ -14,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,6 +38,9 @@ class TapsProcessorTest {
     @Mock
     ProcessStateHandler processStateHandler;
 
+    @Mock
+    TripsCreationService tripsCreationService;
+
     private static final String DATE_PATTERN = "dd-MM-yyyy HH:mm:ss";
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_PATTERN);
 
@@ -45,15 +51,20 @@ class TapsProcessorTest {
         when(tripsCsvConfig.getInputFilePath()).thenReturn(inputFilePath);
         when(tripsCsvConfig.getOutputFilePath()).thenReturn(outputFilePath);
 
-        final List<Trip> mockTrips = List.of(
+        final List<Tap> mockTaps = Arrays.asList(
+                new Tap(1, LocalDateTime.parse("22-01-2023 13:00:00", formatter), TapType.ON, "Stop1", "Company1", "Bus1", "4111111111111111"),
+                new Tap(2, LocalDateTime.parse("22-01-2023 13:05:00", formatter), TapType.OFF, "Stop2", "Company1", "Bus1", "4111111111111111")
+        );
+        final List<Trip> mockTrips = Arrays.asList(
                 new Trip(LocalDateTime.parse("22-01-2023 13:00:00", formatter), LocalDateTime.parse("22-01-2023 13:05:00", formatter), 300, "Stop1", "Stop2", 3.25, "Company1", "Bus1", "4111111111111111", TripStatus.COMPLETED)
         );
 
-        when(csvUtils.readTapsFromCsvAndCreateTrips(inputFilePath)).thenReturn(mockTrips);
+        when(csvUtils.readTapsFromCsv(inputFilePath)).thenReturn(mockTaps);
+        when(tripsCreationService.createTrips(mockTaps)).thenReturn(mockTrips);
 
         final String result = tapsProcessor.processTaps();
 
-        verify(csvUtils).readTapsFromCsvAndCreateTrips(inputFilePath);
+        verify(csvUtils).readTapsFromCsv(inputFilePath);
         verify(csvUtils).writeTripsToCsv(mockTrips, outputFilePath);
 
         assertThat(result).isEqualTo("Processing completed, output saved to output.csv");
@@ -66,13 +77,15 @@ class TapsProcessorTest {
         when(tripsCsvConfig.getInputFilePath()).thenReturn(inputFilePath);
         when(tripsCsvConfig.getOutputFilePath()).thenReturn(outputFilePath);
 
-        final List<Trip> emptyTrip = List.of();
-        when(csvUtils.readTapsFromCsvAndCreateTrips(inputFilePath)).thenReturn(emptyTrip);
+        final List<Tap> emptyTaps = Arrays.asList();
+        when(csvUtils.readTapsFromCsv(inputFilePath)).thenReturn(emptyTaps);
+        when(tripsCreationService.createTrips(emptyTaps)).thenReturn(Arrays.asList());
 
         final String result = tapsProcessor.processTaps();
 
-        verify(csvUtils).readTapsFromCsvAndCreateTrips(inputFilePath);
-        verify(csvUtils).writeTripsToCsv(List.of(), outputFilePath);
+        verify(csvUtils).readTapsFromCsv(inputFilePath);
+        verify(tripsCreationService).createTrips(emptyTaps);
+        verify(csvUtils).writeTripsToCsv(Arrays.asList(), outputFilePath);
 
         assertThat(result).isEqualTo("Processing completed, output saved to output.csv");
     }
@@ -80,14 +93,15 @@ class TapsProcessorTest {
     @Test
     void testProcessTaps_errorInReading() {
         final String inputFilePath = "input.csv";
+        final String outputFilePath = "output.csv";
         when(tripsCsvConfig.getInputFilePath()).thenReturn(inputFilePath);
 
-        when(csvUtils.readTapsFromCsvAndCreateTrips(inputFilePath)).thenThrow(new RuntimeException("Error reading CSV"));
+        when(csvUtils.readTapsFromCsv(inputFilePath)).thenThrow(new RuntimeException("Error reading CSV"));
 
         final RuntimeException exception = Assertions.assertThrows(RuntimeException.class, () -> tapsProcessor.processTaps());
         assertThat(exception.getMessage()).contains("Taps processing failed due to unexpected error: Error reading read taps from CSV:");
 
-        verify(csvUtils).readTapsFromCsvAndCreateTrips(inputFilePath);
+        verify(csvUtils).readTapsFromCsv(inputFilePath);
     }
 
 

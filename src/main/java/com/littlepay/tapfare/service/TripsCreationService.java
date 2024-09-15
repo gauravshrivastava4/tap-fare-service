@@ -29,11 +29,20 @@ public class TripsCreationService {
         this.fareCalculator = fareCalculator;
     }
 
-    public List<Trip> getTrips() {
+    public List<Trip> createTrips(final List<Tap> taps) {
+        resetTrips();
+        taps.forEach(this::createCompletedAndCancelledTrips);
+        createTripsForOrphanTaps();
         return trips;
     }
 
-    public void createCompletedAndCancelledTrips(final Tap tap) {
+    private void resetTrips() {
+        tapOnMap = new HashMap<>();
+        tapOffMap = new HashMap<>();
+        trips = new ArrayList<>();
+    }
+
+    private void createCompletedAndCancelledTrips(final Tap tap) {
         logger.info("Processing tap: {}", tap);
 
         if (tap.getTapType() == TapType.ON) {
@@ -45,10 +54,9 @@ public class TripsCreationService {
         }
     }
 
-    public void resetTrips() {
-        tapOnMap = new HashMap<>();
-        tapOffMap = new HashMap<>();
-        trips = new ArrayList<>();
+    private void createTripsForOrphanTaps() {
+        processOrphanOnTaps();
+        processOrphanOffTaps();
     }
 
     private void handleTapOn(final Tap tapOn) {
@@ -95,11 +103,6 @@ public class TripsCreationService {
                         tap.getLocalDateTime().toLocalDate().isEqual(localDateTime.toLocalDate()))
                 .findFirst()
                 .orElse(null);
-    }
-    
-    public void createTripsForOrphanTaps() {
-        processOrphanOnTaps();
-        processOrphanOffTaps();
     }
 
     private void processOrphanOnTaps() {
