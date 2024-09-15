@@ -1,1 +1,2 @@
+###Start processing Taps
 POST http://localhost:8080/taps/process

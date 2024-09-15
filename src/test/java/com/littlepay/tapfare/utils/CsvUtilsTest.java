@@ -92,9 +92,9 @@ class CsvUtilsTest {
         // Assert
         final List<String> lines = Files.readAllLines(outputCsv);
         assertThat(lines).hasSize(3); // Header + 2 records
-        assertThat(lines.get(0)).isEqualTo("\"Started\",\"Finished\",\"DurationSecs\",\"FromStopId\",\"ToStopId\",\"ChargeAmount\",\"CompanyId\",\"BusID\",\"PAN\",\"Status\"");
-        assertThat(lines.get(1)).isEqualTo("\"2023-01-22T13:00\",\"2023-01-22T13:05\",\"300\",\"Stop1\",\"Stop2\",\"3.25\",\"Company1\",\"Bus37\",\"5500005555555559\",\"COMPLETED\"");
-        assertThat(lines.get(2)).isEqualTo("\"2023-01-23T09:00\",\"\",\"0\",\"Stop3\",\"\",\"7.0\",\"Company2\",\"Bus38\",\"4111111111111111\",\"INCOMPLETE\"");
+        assertThat(lines.get(0)).isEqualTo("Started,Finished,DurationSecs,FromStopId,ToStopId,ChargeAmount,CompanyId,BusID,PAN,Status");
+        assertThat(lines.get(1)).isEqualTo("22-01-2023 13:00:00,22-01-2023 13:05:00,300,Stop1,Stop2,3.25,Company1,Bus37,5500005555555559,COMPLETED");
+        assertThat(lines.get(2)).isEqualTo("23-01-2023 09:00:00,,0,Stop3,,7.0,Company2,Bus38,4111111111111111,INCOMPLETE");
     }
 
     @Test

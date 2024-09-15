@@ -64,11 +64,12 @@ public class CsvUtils {
     public void writeTripsToCsv(final List<Trip> trips, final String outputFilePath) {
         try (final CSVWriter writer = new CSVWriter(new FileWriter(outputFilePath))) {
             log.info("Writing trips to CSV file: {}", outputFilePath);
-            writer.writeNext(TRIP_CSV_HEADER);
+            writer.writeNext(TRIP_CSV_HEADER, false);
 
             for (final Trip trip : trips) {
-                writer.writeNext(convertTripToCsvLine(trip));
+                writer.writeNext(convertTripToCsvLine(trip), false);
             }
+
         } catch (final IOException e) {
             log.error("Error writing to CSV file: {}", outputFilePath, e);
             throw new RuntimeException(e);
@@ -90,8 +91,8 @@ public class CsvUtils {
 
     private String[] convertTripToCsvLine(final Trip trip) {
         return new String[]{
-                trip.getStarted() != null ? trip.getStarted().toString() : "",
-                trip.getFinished() != null ? trip.getFinished().toString() : "",
+                trip.getStarted() != null ? trip.getStarted().format(formatter) : "",
+                trip.getFinished() != null ? trip.getFinished().format(formatter) : "",
                 String.valueOf(trip.getDurationSecs()),
                 trip.getFromStopId() != null ? trip.getFromStopId() : "",
                 trip.getToStopId() != null ? trip.getToStopId() : "",
