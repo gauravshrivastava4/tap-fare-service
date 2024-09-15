@@ -17,6 +17,12 @@ public class TapsProcessController {
 
     private final TapsProcessor tapsProcessor;
 
+
+    /**
+     * Initiates the processing of tap data and returns a message indicating the outcome.
+     *
+     * @return A string message indicating the output file path where the results were saved.
+     */
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("process")
     public String processTaps() {

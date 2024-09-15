@@ -13,6 +13,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * Service class responsible for processing tap data and generating corresponding trip data.
+ * This class orchestrates the entire flow from reading the tap data from a CSV file,
+ * creating trip data based on the taps, and writing the trip data back to a CSV file.
+ */
 @Service
 @AllArgsConstructor
 @Slf4j
@@ -23,6 +28,16 @@ public class TapsProcessor {
     private final ProcessStateHandler processStateHandler;
     private final TripsCreationService tripsCreationService;
 
+
+    /**
+     * Processes tap data by performing a sequence of steps: validating the process state,
+     * reading tap data from a CSV file, creating trips from the tap data, and writing the
+     * generated trips data back to a CSV file.
+     *
+     * @return A string message indicating the output file path where the results were saved.
+     * @throws ProcessStartedException if the process is already running.
+     * @throws ProcessFailedException  if any error occurs during processing.
+     */
     public String processTaps() {
         validateProcessState();
         try {

@@ -15,6 +15,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Service for creating trips from a list of taps.
+ * This service processes a list of tap events to create completed, incomplete,
+ * and cancelled trips. It manages the transitions between tap-on and tap-off
+ * events, ensuring that every tap event is properly accounted for in the generated
+ * trips.
+ * This service uses {@link FareCalculator} to calculate the fare for each trip.
+ */
 @Service
 public class TripsCreationService {
 
@@ -29,6 +37,15 @@ public class TripsCreationService {
         this.fareCalculator = fareCalculator;
     }
 
+
+    /**
+     * Creates a list of trips from the given list of taps.
+     * It first creates Completed And Cancelled Trips
+     * Then Creates Incomplete trips from Orphans
+     *
+     * @param taps the list of taps to process. Each tap represents Tap On or Tap Off.
+     * @return a list of trips created from the taps.
+     */
     public List<Trip> createTrips(final List<Tap> taps) {
         resetTrips();
         taps.forEach(this::createCompletedAndCancelledTrips);
@@ -54,11 +71,27 @@ public class TripsCreationService {
         }
     }
 
+
+    /**
+     * Processes orphan "Tap On" and "Tap Off" events to create incomplete trips.
+     * This method is invoked after attempting to create completed and cancelled trips.
+     * It processes the remaining unmatched "Tap On" and "Tap Off" events, generating
+     * incomplete trips for each orphan tap.
+     */
     private void createTripsForOrphanTaps() {
         processOrphanOnTaps();
         processOrphanOffTaps();
     }
 
+
+    /**
+     * Handles the "Tap On" event by attempting to match it with an existing "Tap Off" event to create a completed trip.
+     * If a matching "Tap Off" event is found, a trip is created and logged; otherwise, the "Tap On" event is stored
+     * for future processing.
+     *
+     * @param tapOn the tap on event to be handled. This event will be used to find a corresponding "Tap Off" event
+     *              to complete the trip.
+     */
     private void handleTapOn(final Tap tapOn) {
         final List<Tap> matchingOffTaps = tapOffMap.getOrDefault(tapOn.getPan(), new ArrayList<>());
         final Tap matchingTapOff = findMatchingTapOff(matchingOffTaps, tapOn.getPan(), tapOn.getLocalDateTime());
@@ -74,6 +107,15 @@ public class TripsCreationService {
         }
     }
 
+
+    /**
+     * Handles a "Tap Off" event by attempting to find a matching "Tap On" event.
+     * If a matching "Tap On" event is found, a trip is created and logged.
+     * Otherwise, the "Tap Off" event is stored for future processing.
+     *
+     * @param tapOff the tap off event to be handled. This event will be used
+     *               to find a corresponding "Tap On" event to complete the trip.
+     */
     private void handleTapOff(final Tap tapOff) {
         final List<Tap> matchingOnTaps = tapOnMap.getOrDefault(tapOff.getPan(), new ArrayList<>());
         final Tap matchingTapOn = findMatchingTapOn(matchingOnTaps, tapOff.getPan(), tapOff.getLocalDateTime());

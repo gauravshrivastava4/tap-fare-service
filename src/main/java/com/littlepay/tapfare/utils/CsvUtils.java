@@ -20,6 +20,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Utility class for reading and writing CSV files containing tap and trip data.
+ */
 @Component
 @Slf4j
 @RequiredArgsConstructor
@@ -54,7 +57,7 @@ public class CsvUtils {
             log.error("Error reading from CSV file: {}", inputFilePath, e);
             throw new CsvProcessingException("Error reading from CSV file: %s".formatted(inputFilePath), e);
         }
-        sortByDatetime(taps);
+        sortByDatetime(taps);//sorting by Date time to be able to handle multiple trips for a single pan
         return taps;
     }
 
