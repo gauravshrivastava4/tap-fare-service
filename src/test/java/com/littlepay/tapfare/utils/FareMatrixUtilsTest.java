@@ -3,7 +3,10 @@ package com.littlepay.tapfare.utils;
 import com.littlepay.tapfare.config.TripsFareConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,14 +14,16 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class FareMatrixUtilsTest {
 
+    @Mock
     private TripsFareConfig tripsFareConfig;
+    @InjectMocks
     private FareMatrixUtils fareMatrixUtils;
 
     @BeforeEach
     void setUp() {
-        tripsFareConfig = Mockito.mock(TripsFareConfig.class);
 
         final Map<String, Map<String, Double>> mockFareConfig = new HashMap<>();
 
@@ -40,33 +45,28 @@ class FareMatrixUtilsTest {
 
     @Test
     void testPopulateFareMatrix() {
-        // Check fares for Stop1
-        assertThat(FareMatrixUtils.fareMatrix).containsKey("Stop1");
-        assertThat(FareMatrixUtils.fareMatrix.get("Stop1")).containsEntry("Stop2", 3.25);
-        assertThat(FareMatrixUtils.fareMatrix.get("Stop1")).containsEntry("Stop3", 7.00);
+        assertThat(FareMatrixUtils.getFareMatrix()).containsKey("Stop1");
+        assertThat(FareMatrixUtils.getFareMatrix().get("Stop1")).containsEntry("Stop2", 3.25);
+        assertThat(FareMatrixUtils.getFareMatrix().get("Stop1")).containsEntry("Stop3", 7.00);
 
-        // Check fares for Stop2
-        assertThat(FareMatrixUtils.fareMatrix).containsKey("Stop2");
-        assertThat(FareMatrixUtils.fareMatrix.get("Stop2")).containsEntry("Stop1", 3.25);
-        assertThat(FareMatrixUtils.fareMatrix.get("Stop2")).containsEntry("Stop3", 5.50);
+        assertThat(FareMatrixUtils.getFareMatrix()).containsKey("Stop2");
+        assertThat(FareMatrixUtils.getFareMatrix().get("Stop2")).containsEntry("Stop1", 3.25);
+        assertThat(FareMatrixUtils.getFareMatrix().get("Stop2")).containsEntry("Stop3", 5.50);
 
-        // Check reciprocal fares (ensures symmetry)
-        assertThat(FareMatrixUtils.fareMatrix.get("Stop3").get("Stop1")).isEqualTo(7.00);
-        assertThat(FareMatrixUtils.fareMatrix.get("Stop3").get("Stop2")).isEqualTo(5.50);
+        assertThat(FareMatrixUtils.getFareMatrix().get("Stop3").get("Stop1")).isEqualTo(7.00);
+        assertThat(FareMatrixUtils.getFareMatrix().get("Stop3").get("Stop2")).isEqualTo(5.50);
     }
 
     @Test
     void testFareMatrixSymmetry() {
-        // Ensure that fares are symmetric (StopA -> StopB is the same as StopB -> StopA)
+        assertThat(FareMatrixUtils.getFareMatrix().get("Stop1").get("Stop2"))
+                .isEqualTo(FareMatrixUtils.getFareMatrix().get("Stop2").get("Stop1"));
 
-        assertThat(FareMatrixUtils.fareMatrix.get("Stop1").get("Stop2"))
-                .isEqualTo(FareMatrixUtils.fareMatrix.get("Stop2").get("Stop1"));
+        assertThat(FareMatrixUtils.getFareMatrix().get("Stop1").get("Stop3"))
+                .isEqualTo(FareMatrixUtils.getFareMatrix().get("Stop3").get("Stop1"));
 
-        assertThat(FareMatrixUtils.fareMatrix.get("Stop1").get("Stop3"))
-                .isEqualTo(FareMatrixUtils.fareMatrix.get("Stop3").get("Stop1"));
-
-        assertThat(FareMatrixUtils.fareMatrix.get("Stop2").get("Stop3"))
-                .isEqualTo(FareMatrixUtils.fareMatrix.get("Stop3").get("Stop2"));
+        assertThat(FareMatrixUtils.getFareMatrix().get("Stop2").get("Stop3"))
+                .isEqualTo(FareMatrixUtils.getFareMatrix().get("Stop3").get("Stop2"));
     }
 }
 

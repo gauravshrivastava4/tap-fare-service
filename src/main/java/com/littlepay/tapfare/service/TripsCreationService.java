@@ -4,75 +4,122 @@ import com.littlepay.tapfare.constant.TapType;
 import com.littlepay.tapfare.constant.TripStatus;
 import com.littlepay.tapfare.model.Tap;
 import com.littlepay.tapfare.model.Trip;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class TripsCreationService {
 
+    private static final Logger logger = LoggerFactory.getLogger(TripsCreationService.class);
+
     private final FareCalculator fareCalculator;
+    private static Map<String, List<Tap>> tapOnMap = new HashMap<>();
+    private static Map<String, List<Tap>> tapOffMap = new HashMap<>();
+    private static List<Trip> trips = new ArrayList<>();
 
     public TripsCreationService(final FareCalculator fareCalculator) {
         this.fareCalculator = fareCalculator;
     }
 
-    public List<Trip> createTrips(final List<Tap> taps) {
-        final List<Trip> trips = new ArrayList<>();
-        Tap previousTap = null;
-        TripStatus previousTripStatus = null;
-
-        for (int i = 0; i < taps.size(); i++) {
-            final Tap currentTap = taps.get(i);
-
-            // Process ON taps
-            if (currentTap.getTapType() == TapType.ON) {
-                final Trip trip = processTapON(taps, currentTap, i, trips);
-                previousTap = currentTap;
-                previousTripStatus = trip.getStatus();
-            }
-
-            // Process orphaned OFF taps
-            else if (currentTap.getTapType() == TapType.OFF) {
-                processOrphanedTapOff(taps, i, previousTap, previousTripStatus, currentTap, trips);
-            }
-        }
+    public List<Trip> getTrips() {
         return trips;
     }
 
-    private Trip processTapON(final List<Tap> taps, final Tap currentTap, final int i, final List<Trip> trips) {
-        final Tap tapOff = findMatchingTapOff(taps, currentTap.getPan(), currentTap.getLocalDateTime(), i);
-        final Trip trip = createTrip(currentTap, tapOff);
-        trips.add(trip);
-        return trip;
-    }
+    public void createCompletedAndCancelledTrips(final Tap tap) {
+        logger.info("Processing tap: {}", tap);
 
-    private void processOrphanedTapOff(final List<Tap> taps, final int i, final Tap previousTap, final TripStatus previousTripStatus, final Tap currentTap, final List<Trip> trips) {
-        final var isLastTap = isLastTap(taps, i);
-        if (isOrphanedOffTap(previousTap, previousTripStatus, currentTap, isLastTap)) {
-            trips.add(handleOrphanTapOff(currentTap));
+        if (tap.getTapType() == TapType.ON) {
+            handleTapOn(tap);
+        } else if (tap.getTapType() == TapType.OFF) {
+            handleTapOff(tap);
+        } else {
+            logger.warn("Unknown tap type: {}", tap.getTapType());
         }
     }
 
-    private static boolean isLastTap(final List<Tap> taps, final int i) {
-        return i == taps.size() - 1;
+    public void resetTrips() {
+        tapOnMap = new HashMap<>();
+        tapOffMap = new HashMap<>();
+        trips = new ArrayList<>();
     }
 
-    private boolean isOrphanedOffTap(final Tap previousTap, final TripStatus previousTripStatus, final Tap currentTap, final boolean isLastTap) {
-        return previousTap == null ||
-                (!previousTripStatus.equals(TripStatus.COMPLETED) && !previousTap.getPan().equals(currentTap.getPan()) && isLastTap);
+    private void handleTapOn(final Tap tapOn) {
+        final List<Tap> matchingOffTaps = tapOffMap.getOrDefault(tapOn.getPan(), new ArrayList<>());
+        final Tap matchingTapOff = findMatchingTapOff(matchingOffTaps, tapOn.getPan(), tapOn.getLocalDateTime());
+
+        if (matchingTapOff != null) {
+            final Trip trip = createTrip(tapOn, matchingTapOff);
+            trips.add(trip);
+            matchingOffTaps.remove(matchingTapOff);
+            logger.info("Completed trip created for PAN: {} from {} to {}", tapOn.getPan(), tapOn.getStopId(), matchingTapOff.getStopId());
+        } else {
+            tapOnMap.computeIfAbsent(tapOn.getPan(), k -> new ArrayList<>()).add(tapOn);
+            logger.info("No matching OFF tap found for ON tap at stop {}, storing for later.", tapOn.getStopId());
+        }
     }
 
-    private Tap findMatchingTapOff(final List<Tap> taps, final String pan, final LocalDateTime localDateTime, final int index) {
+    private void handleTapOff(final Tap tapOff) {
+        final List<Tap> matchingOnTaps = tapOnMap.getOrDefault(tapOff.getPan(), new ArrayList<>());
+        final Tap matchingTapOn = findMatchingTapOn(matchingOnTaps, tapOff.getPan(), tapOff.getLocalDateTime());
+
+        if (matchingTapOn != null) {
+            final Trip trip = createTrip(matchingTapOn, tapOff);
+            trips.add(trip);
+            matchingOnTaps.remove(matchingTapOn);
+            logger.info("Completed trip created for PAN: {} from {} to {}", tapOff.getPan(), matchingTapOn.getStopId(), tapOff.getStopId());
+        } else {
+            tapOffMap.computeIfAbsent(tapOff.getPan(), k -> new ArrayList<>()).add(tapOff);
+            logger.info("No matching ON tap found for OFF tap at stop {}, storing for later.", tapOff.getStopId());
+        }
+    }
+
+    private Tap findMatchingTapOff(final List<Tap> taps, final String pan, final LocalDateTime localDateTime) {
         return taps.stream()
-                .skip(index + 1)
-                .filter(tap -> tap.getPan().equals(pan) && tap.getTapType() == TapType.OFF &&
-                        tap.getLocalDateTime().toLocalDate().isEqual(localDateTime.toLocalDate()))//Assuming that tap on and tap off would belong to the same date
+                .filter(tap -> tap.getPan().equals(pan) && tap.getLocalDateTime().isAfter(localDateTime) &&
+                        tap.getLocalDateTime().toLocalDate().isEqual(localDateTime.toLocalDate()))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private Tap findMatchingTapOn(final List<Tap> taps, final String pan, final LocalDateTime localDateTime) {
+        return taps.stream()
+                .filter(tap -> tap.getPan().equals(pan) && tap.getLocalDateTime().isBefore(localDateTime) &&
+                        tap.getLocalDateTime().toLocalDate().isEqual(localDateTime.toLocalDate()))
+                .findFirst()
+                .orElse(null);
+    }
+    
+    public void createTripsForOrphanTaps() {
+        processOrphanOnTaps();
+        processOrphanOffTaps();
+    }
+
+    private void processOrphanOnTaps() {
+        tapOnMap.forEach((pan, taps) -> {
+            for (final Tap tapOn : taps) {
+                trips.add(createIncompleteTrip(tapOn));
+                logger.info("Incomplete trip created for orphan ON tap at stop {}", tapOn.getStopId());
+            }
+        });
+        tapOnMap.clear();
+    }
+
+    private void processOrphanOffTaps() {
+        tapOffMap.forEach((pan, taps) -> {
+            for (final Tap tapOff : taps) {
+                trips.add(handleOrphanTapOff(tapOff));
+                logger.info("Incomplete trip created for orphan OFF tap at stop {}", tapOff.getStopId());
+            }
+        });
+        tapOffMap.clear();
     }
 
     private Trip createTrip(final Tap tapOn, final Tap tapOff) {
@@ -108,10 +155,10 @@ public class TripsCreationService {
     private Trip createTripWithDetails(final Tap tapOn, final Tap tapOff, final long durationSecs, final double fare, final TripStatus status) {
         return new Trip(
                 tapOn.getLocalDateTime(),
-                tapOff.getLocalDateTime(),
+                tapOff != null ? tapOff.getLocalDateTime() : null,
                 durationSecs,
                 tapOn.getStopId(),
-                tapOff.getStopId(),
+                tapOff != null ? tapOff.getStopId() : null,
                 fare,
                 tapOn.getCompanyId(),
                 tapOn.getBusId(),

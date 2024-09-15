@@ -8,10 +8,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
-@Getter
 public class FareMatrixUtils {
 
-    public static final Map<String, Map<String, Double>> fareMatrix = new HashMap<>();
+    @Getter
+    private static final Map<String, Map<String, Double>> fareMatrix = new HashMap<>();
 
     public FareMatrixUtils(final TripsFareConfig tripsFareConfig) {
         populateFareMatrix(tripsFareConfig);

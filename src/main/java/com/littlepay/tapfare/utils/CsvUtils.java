@@ -4,8 +4,10 @@ import com.littlepay.tapfare.constant.TapType;
 import com.littlepay.tapfare.exceptions.CsvProcessingException;
 import com.littlepay.tapfare.model.Tap;
 import com.littlepay.tapfare.model.Trip;
+import com.littlepay.tapfare.service.TripsCreationService;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -15,22 +17,34 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class CsvUtils {
 
+    private final TripsCreationService tripsCreationService;
     private static final String DATE_PATTERN = "dd-MM-yyyy HH:mm:ss";
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_PATTERN);
     private static final String[] TRIP_CSV_HEADER = {"Started", "Finished", "DurationSecs", "FromStopId", "ToStopId",
             "ChargeAmount", "CompanyId", "BusID", "PAN", "Status"};
 
-    public List<Tap> readTapsFromCsv(final String inputFilePath) {
-        final List<Tap> taps = new ArrayList<>();
+    public List<Trip> readTapsFromCsvAndCreateTrips(final String inputFilePath) {
+        log.info("Creating Trips for Completed And Cancelled Trips");
+        createCompletedAndCancelledTrips(inputFilePath);
+        log.info("Creating Trips for Orphan Taps");
+        createTripsForOrphanTaps();
+        log.info("Trips are created successfully.");
+        return tripsCreationService.getTrips();
+    }
 
+    private void createTripsForOrphanTaps() {
+        tripsCreationService.createTripsForOrphanTaps();
+    }
+
+    private void createCompletedAndCancelledTrips(final String inputFilePath) {
+        tripsCreationService.resetTrips();
         try (final CSVReader reader = new CSVReader(new FileReader(inputFilePath))) {
             log.info("Reading taps from CSV file: {}", inputFilePath);
             String[] line;
@@ -39,7 +53,7 @@ public class CsvUtils {
             while ((line = reader.readNext()) != null) {
                 try {
                     final Tap tap = parseCsvLineToTap(line);
-                    taps.add(tap);
+                    tripsCreationService.createCompletedAndCancelledTrips(tap);
                 } catch (final DateTimeParseException e) {
                     log.error("Error parsing date for tap ID: {}", line[0], e);
                     throw new CsvProcessingException("Error parsing date for tap ID: %s".formatted(line[0]), e);
@@ -52,13 +66,6 @@ public class CsvUtils {
             log.error("Error reading from CSV file: {}", inputFilePath, e);
             throw new CsvProcessingException("Error reading from CSV file: %s".formatted(inputFilePath), e);
         }
-
-        sortByDatetime(taps);
-        return taps;
-    }
-
-    private void sortByDatetime(final List<Tap> taps) {
-        taps.sort(Comparator.comparing(Tap::getLocalDateTime));
     }
 
     public void writeTripsToCsv(final List<Trip> trips, final String outputFilePath) {

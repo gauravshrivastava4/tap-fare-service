@@ -8,10 +8,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 @SpringBootApplication
 @EnableConfigurationProperties({TripsCsvConfig.class, TripsFareConfig.class})
-public class TapfareApplication {
+public class TapFareApplication {
 
     public static void main(final String[] args) {
-        SpringApplication.run(TapfareApplication.class, args);
+        SpringApplication.run(TapFareApplication.class, args);
     }
 
 }

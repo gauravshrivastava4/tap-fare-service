@@ -15,16 +15,13 @@ import static org.mockito.Mockito.when;
 class DefaultFareCalculatorTest {
 
     private DefaultFareCalculator defaultFareCalculator;
-    private TripsFareConfig tripsFareConfig;
-    private FareMatrixUtils fareMatrixUtils;
 
     @BeforeEach
     void setUp() {
+
         defaultFareCalculator = new DefaultFareCalculator();
 
-        final Map<String, Map<String, Double>> fareMatrix = new HashMap<>();
-
-        tripsFareConfig = Mockito.mock(TripsFareConfig.class);
+        final var tripsFareConfig = Mockito.mock(TripsFareConfig.class);
 
         final Map<String, Map<String, Double>> mockFareConfig = new HashMap<>();
 
@@ -41,7 +38,7 @@ class DefaultFareCalculatorTest {
 
         when(tripsFareConfig.getFare()).thenReturn(mockFareConfig);
 
-        fareMatrixUtils = new FareMatrixUtils(tripsFareConfig);
+        final var fareMatrixUtils = new FareMatrixUtils(tripsFareConfig);
     }
 
     @Test
