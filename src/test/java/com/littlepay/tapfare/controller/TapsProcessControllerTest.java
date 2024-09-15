@@ -24,11 +24,9 @@ class TapsProcessControllerTest {
 
     @Test
     void testProcessTaps_ReturnsCreatedStatusAndMessage() throws Exception {
-        // Given
-        final String expectedResponse = "Taps processed successfully";
+        final String expectedResponse = "Processing completed, output saved to src/main/resources/trips.csv";
         when(tapsProcessor.processTaps()).thenReturn(expectedResponse);
 
-        // When & Then
         mockMvc.perform(post("/taps/process")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())

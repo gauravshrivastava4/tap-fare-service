@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +29,9 @@ class CsvUtilsTest {
 
     @TempDir
     Path tempDir;
+
+    private static final String DATE_PATTERN = "dd-MM-yyyy HH:mm:ss";
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_PATTERN);
 
     @Test
     void testReadTapsFromCsv_success() throws Exception {
@@ -72,9 +76,9 @@ class CsvUtilsTest {
         final Path outputCsv = tempDir.resolve("trips.csv");
 
         final List<Trip> trips = List.of(
-                new Trip(LocalDateTime.of(2023, 1, 22, 13, 0), LocalDateTime.of(2023, 1, 22, 13, 5), 300,
+                new Trip(LocalDateTime.parse("22-01-2023 13:00:00", formatter), LocalDateTime.parse("22-01-2023 13:05:00", formatter), 300,
                         "Stop1", "Stop2", 3.25, "Company1", "Bus37", "5500005555555559", TripStatus.COMPLETED),
-                new Trip(LocalDateTime.of(2023, 1, 23, 9, 0), null, 0, "Stop3", null, 7.00, "Company2",
+                new Trip(LocalDateTime.parse("23-01-2023 09:00:00", formatter), null, 0, "Stop3", null, 7.00, "Company2",
                         "Bus38", "4111111111111111", TripStatus.INCOMPLETE)
         );
 
@@ -93,7 +97,7 @@ class CsvUtilsTest {
         final String invalidPath = "/invalid_path/trips.csv"; // Invalid path
 
         final List<Trip> trips = List.of(
-                new Trip(LocalDateTime.of(2023, 1, 22, 13, 0), LocalDateTime.of(2023, 1, 22, 13, 5), 300,
+                new Trip(LocalDateTime.parse("22-01-2023 13:00:00", formatter), LocalDateTime.parse("22-01-2023 13:05:00", formatter), 300,
                         "Stop1", "Stop2", 3.25, "Company1", "Bus37", "5500005555555559", TripStatus.COMPLETED)
         );
 

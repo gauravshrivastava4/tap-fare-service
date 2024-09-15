@@ -4,7 +4,9 @@ import com.littlepay.tapfare.config.TripsFareConfig;
 import com.littlepay.tapfare.utils.FareMatrixUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,16 +14,18 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class DefaultFareCalculatorTest {
 
     private DefaultFareCalculator defaultFareCalculator;
+
+    @Mock
+    TripsFareConfig tripsFareConfig;
 
     @BeforeEach
     void setUp() {
 
         defaultFareCalculator = new DefaultFareCalculator();
-
-        final var tripsFareConfig = Mockito.mock(TripsFareConfig.class);
 
         final Map<String, Map<String, Double>> mockFareConfig = new HashMap<>();
 
@@ -38,7 +42,7 @@ class DefaultFareCalculatorTest {
 
         when(tripsFareConfig.getFare()).thenReturn(mockFareConfig);
 
-        final var fareMatrixUtils = new FareMatrixUtils(tripsFareConfig);
+        new FareMatrixUtils(tripsFareConfig);
     }
 
     @Test

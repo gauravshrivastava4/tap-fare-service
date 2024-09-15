@@ -11,19 +11,19 @@ the fare for each trip based on a predefined fare matrix.
 
 - Processing concurrent taps are out of scope.
 - In order to consider a trip COMPLETE, tap-on and tap-off should happen at the same day
-- One csv file will contain data for only one Company
+- One csv file will contain data only for one Company
 - CSV may have orphan ONs and OFFs
 - CSV will not have data sorted by time
 - CSV can have multiple COMPLETED trips for a single PAN, hence sorting the CSV by localdatetime before processing
 - There is no need to consider different timezones
+- Input and Output files can be stored within the project
 
 ## Improvement Opportunities
 
 - We can use kafka for parallel streaming of taps, we can publish the taps on to the kafka topic while reading the taps
   from csv.
-- Kafka consumer can be created for consuming the taps and creating the trips
-- TripsCreationService.createCompletedAndCancelledTrips can be executed asynchronously to process taps
-- DB can be used for the persistence of the taps instead of memory, which will make the processing easier.
+- Kafka consumer can be created for consuming the taps and persist it
+- A separate process can be created to create the trips and write it to CSV
 - Fare details can also be stored in db
 
 ## Features
@@ -51,8 +51,7 @@ the fare for each trip based on a predefined fare matrix.
 
 ### 2. **Utilities**
 
-- **CsvUtils**: Reads tap data from a CSV file, submits them for processing and writes processed trip data to another
-  CSV file.
+- **CsvUtils**: Reads tap data from a CSV file and writes processed trip data to another CSV file.
 - **FareMatrixUtils**: Loads a fare matrix from configuration and ensures symmetric fare calculation between stops.
 
 ### 3. **Models**
@@ -71,12 +70,13 @@ the fare for each trip based on a predefined fare matrix.
 1. **Reading Tap Data**:
     - Tap data is imported from a CSV file. Each tap record includes details like tap time, type (on or off), stop ID,
       company ID, bus ID, and PAN (Payment Account Number).
+    - Data is then sorted by time
 
 2. **Trip Processing**:
-    - The system processes each tap-on event, looks for a corresponding tap-off event happened at the same day, and
-      generates a trip.
+    - The system processes each tap event, looks for a corresponding tap-off or tap-onn event happened at the same day,
+      and generates a trip.
     - If no corresponding tap-off or tap-on is found, the trip is marked as **incomplete**.
-    - If tap-on and tap-off happen at the same stop, the trip is **canceled**.
+    - If tap-on and tap-off happen at the same stop, the trip is marked as **canceled**.
 
 3. **Fare Calculation**:
     - For completed trips, the fare is calculated based on the distance between the start and end stops using a
@@ -167,9 +167,9 @@ ID,DateTimeUTC,TapType,StopId,CompanyId,BusID,PAN
 
 ```
 Started,Finished,DurationSecs,FromStopId,ToStopId,ChargeAmount,CompanyId,BusID,PAN,Status
-22-01-2023 09:20:00,,0,Stop3,,7.3,Company1,Bus36,4111111111111111,INCOMPLETE
 22-01-2023 13:00:00,22-01-2023 13:05:00,300,Stop1,Stop2,3.25,Company1,Bus37,5500005555555559,COMPLETED
 23-01-2023 08:00:00,23-01-2023 08:02:00,0,Stop1,Stop1,0.0,Company1,Bus37,4111111111111111,CANCELLED
+22-01-2023 09:20:00,,0,Stop3,,7.3,Company1,Bus36,4111111111111111,INCOMPLETE
 ,24-01-2023 16:30:00,0,,Stop2,5.5,Company1,Bus37,5500005555555559,INCOMPLETE
 ...
 ```
